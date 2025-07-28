@@ -1,0 +1,139 @@
+Validation split: 0.2
+model.compile(
+    optimizer="adam",
+    loss='sparse_categorical_crossentropy',
+    metrics=["accuracy"]
+)
+    NUM_CATEGORIES = 12
+    IMG_WIDTH = 64
+    IMG_HEIGHT = 64
+    EPOCHS = 10
+    BATCH_SIZE = 32
+
+
+1o Teste:
+    Modelo usado foi o aprendido a partir do Curso de Harvard
+    model = tf.keras.Sequential([
+        tf.keras.layers.Rescaling(1./255),
+        tf.keras.layers.Conv2D(32, (3, 3), input_shape=(IMG_WIDTH, IMG_HEIGHT, 3), padding="same", activation='relu'),
+        tf.keras.layers.MaxPooling2D(pool_size=(2, 2)),
+        tf.keras.layers.Conv2D(64, (3, 3), padding='same', activation='relu'),
+        tf.keras.layers.MaxPooling2D(pool_size=(2, 2)),
+        tf.keras.layers.Conv2D(128, (3, 3), padding='same', activation='relu'),
+        tf.keras.layers.MaxPooling2D(pool_size=(2, 2)),
+        tf.keras.layers.Flatten(),
+        tf.keras.layers.Dense(512, activation="relu"),
+        tf.keras.layers.Dropout(0.5),
+        tf.keras.layers.Dense(256, activation="relu"),
+        tf.keras.layers.Dense(12, activation = "softmax")
+    ])
+   
+    accuracy: 0.8896 - loss: 0.3218 - val_accuracy: 0.7821 - val_loss: 0.8899
+    identificado overfitting
+
+2o teste:
+    outra camada de dropout de 0.5, visando diminuir overfitting. Não adiantou e piorou acuracia e validation accuracy
+
+        tf.keras.layers.Rescaling(1./255),
+        tf.keras.layers.Conv2D(32, (3, 3), input_shape=(IMG_WIDTH, IMG_HEIGHT, 3), padding="same", activation='relu'),
+        tf.keras.layers.MaxPooling2D(pool_size=(2, 2)),
+        tf.keras.layers.Conv2D(64, (3, 3), padding='same', activation='relu'),
+        tf.keras.layers.MaxPooling2D(pool_size=(2, 2)),
+        tf.keras.layers.Conv2D(128, (3, 3), padding='same', activation='relu'),
+        tf.keras.layers.MaxPooling2D(pool_size=(2, 2)),
+        tf.keras.layers.Flatten(),
+        tf.keras.layers.Dense(512, activation="relu"),
+        tf.keras.layers.Dropout(0.5),
+        tf.keras.layers.Dense(256, activation="relu"),
+        tf.keras.layers.Dropout(0.5),
+        tf.keras.layers.Dense(12, activation = "softmax")
+
+3o teste:
+    aumentado a largura e altura das imagens de 64 para 224. Tive que remover guardar o dataset na RAM pois estava faltando memoria (removi o .cache() dos dados de treinamento)
+    acuracia aumentou um pouco, mas a validacao piorou
+
+    NUM_CATEGORIES = 12
+    IMG_WIDTH = 224
+    IMG_HEIGHT = 224
+    EPOCHS = 10
+    BATCH_SIZE = 32
+    
+    tf.keras.layers.Rescaling(1./255),
+        tf.keras.layers.Conv2D(32, (3, 3), input_shape=(IMG_WIDTH, IMG_HEIGHT, 3), padding="same", activation='relu'),
+        tf.keras.layers.MaxPooling2D(pool_size=(2, 2)),
+        tf.keras.layers.Conv2D(64, (3, 3), padding='same', activation='relu'),
+        tf.keras.layers.MaxPooling2D(pool_size=(2, 2)),
+        tf.keras.layers.Conv2D(128, (3, 3), padding='same', activation='relu'),
+        tf.keras.layers.MaxPooling2D(pool_size=(2, 2)),
+        tf.keras.layers.Flatten(),
+        tf.keras.layers.Dense(512, activation="relu"),
+        tf.keras.layers.Dropout(0.5),
+        tf.keras.layers.Dense(256, activation="relu"),
+        tf.keras.layers.Dropout(0.5),
+        tf.keras.layers.Dense(12, activation = "softmax")
+        
+    accuracy: 0.9057 - loss: 0.2936 - val_accuracy: 0.7438 - val_loss: 1.0677
+
+4o teste: tecnicas de data augmentation aplicadas(random flip e random rotation). training accuracy cai de 90 para 68, mas modelo para de ter overfitting 
+pois validation accuracy fica em 69
+
+    data_augmentation = tf.keras.Sequential([
+        tf.keras.layers.RandomFlip("horizontal_and_vertical"),
+        tf.keras.layers.RandomRotation(0.2)
+    ])
+
+    def get_model():
+        model = tf.keras.Sequential([
+            tf.keras.layers.Rescaling(1./255),
+            data_augmentation,
+            tf.keras.layers.Conv2D(32, (3, 3), input_shape=(IMG_WIDTH, IMG_HEIGHT, 3), padding="same", activation='relu'),
+            tf.keras.layers.MaxPooling2D(pool_size=(2, 2)),
+            tf.keras.layers.Conv2D(64, (3, 3), padding='same', activation='relu'),
+            tf.keras.layers.MaxPooling2D(pool_size=(2, 2)),
+            tf.keras.layers.Conv2D(128, (3, 3), padding='same', activation='relu'),
+            tf.keras.layers.MaxPooling2D(pool_size=(2, 2)),
+            tf.keras.layers.Flatten(),
+            tf.keras.layers.Dense(512, activation="relu"),
+            tf.keras.layers.Dropout(0.5),
+            tf.keras.layers.Dense(256, activation="relu"),
+            tf.keras.layers.Dropout(0.5),
+            tf.keras.layers.Dense(12, activation = "softmax")
+        ])
+        
+        model.compile(
+            optimizer="adam",
+            loss='sparse_categorical_crossentropy',
+            metrics=["accuracy"]
+        )
+        return model
+
+    
+5o teste:
+    dataset dividido em treino, validacao e teste. adicionada camada de data augmentation. acuracia melhorou, mas ainda há overfitting.
+    Epoch 10/10
+    339/339 ━━━━━━━━━━━━━━━━━━━━ 27s 80ms/step - accuracy: 0.8980 - loss: 0.3316 - val_accuracy: 0.7141 - val_loss: 1.1699
+    74/74 ━━━━━━━━━━━━━━━━━━━━ 2s 20ms/step - accuracy: 0.7228 - loss: 1.1641
+    def get_model():
+    model = tf.keras.Sequential([
+        tf.keras.layers.Rescaling(1./255),
+        tf.keras.layers.RandAugment(value_range=(0, 1), num_ops=2, factor=0.5, interpolation="bilinear", seed=123, data_format=None,),
+        tf.keras.layers.Conv2D(32, (3, 3), input_shape=(IMG_WIDTH, IMG_HEIGHT, 3), padding="same", activation='relu'),
+        tf.keras.layers.MaxPooling2D(pool_size=(2, 2)),
+        tf.keras.layers.Conv2D(64, (3, 3), padding='same', activation='relu'),
+        tf.keras.layers.MaxPooling2D(pool_size=(2, 2)),
+        tf.keras.layers.Conv2D(128, (3, 3), padding='same', activation='relu'),
+        tf.keras.layers.MaxPooling2D(pool_size=(2, 2)),
+        tf.keras.layers.Flatten(),
+        tf.keras.layers.Dense(512, activation="relu"),
+        tf.keras.layers.Dropout(0.5),
+        tf.keras.layers.Dense(256, activation="relu"),
+        tf.keras.layers.Dropout(0.5),
+        tf.keras.layers.Dense(12, activation = "softmax")
+    ])
+    
+    model.compile(
+        optimizer="adam",
+        loss='sparse_categorical_crossentropy',
+        metrics=["accuracy"]
+    )
+    return model

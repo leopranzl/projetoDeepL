@@ -1,0 +1,6 @@
+numpy>=1.26
+tensorflow[and-cuda]
+tensorflow-datasets
+matplotlib
+Pillow
+tensorflow_docs
