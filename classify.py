@@ -3,8 +3,9 @@ import os
 import tensorflow as tf
 import sys
 import tensorflow_datasets as tfds
+import pandas as pd
 
-NUM_CATEGORIES = 12
+NUM_CATEGORIES = 10
 IMG_WIDTH = 224
 IMG_HEIGHT = 224
 EPOCHS = 10
@@ -39,19 +40,34 @@ def load_data(data_dir):
         image_size=(IMG_HEIGHT, IMG_WIDTH),
         batch_size=BATCH_SIZE)
 
+    # Pegue os nomes das classes ANTES do prefetch
+    class_names = train_dataset.class_names
+
+    # Agora aplique o prefetch
     AUTOTUNE = tf.data.AUTOTUNE
     train_dataset = train_dataset.prefetch(buffer_size=AUTOTUNE)
     validation_dataset = validation_dataset.prefetch(buffer_size=AUTOTUNE)
     test_dataset = test_dataset.prefetch(buffer_size=AUTOTUNE)
 
-    return train_dataset, validation_dataset, test_dataset
+    # Retorne os nomes junto com os datasets
+    return train_dataset, validation_dataset, test_dataset, class_names
 
+def show_classes_info(dataset, class_names):
+    labels = []
+    for images, batch_labels in dataset:
+        labels.extend(batch_labels.numpy())
 
+    label_counts = pd.Series(labels).value_counts().sort_index()
+
+    # Usa a lista de nomes recebida como parâmetro
+    label_counts.index = [class_names[i] for i in label_counts.index]
+
+    print("\nImagens por Classe:")
+    print(label_counts.sort_index())
 
 def get_model():
     model = tf.keras.Sequential([
         tf.keras.layers.Rescaling(1./255),
-        tf.keras.layers.RandAugment(value_range=(0, 1), num_ops=2, factor=0.5, interpolation="bilinear", seed=123, data_format=None,),
         tf.keras.layers.Conv2D(32, (3, 3), input_shape=(IMG_WIDTH, IMG_HEIGHT, 3), padding="same", activation='relu'),
         tf.keras.layers.MaxPooling2D(pool_size=(2, 2)),
         tf.keras.layers.Conv2D(64, (3, 3), padding='same', activation='relu'),
@@ -63,7 +79,7 @@ def get_model():
         tf.keras.layers.Dropout(0.5),
         tf.keras.layers.Dense(256, activation="relu"),
         tf.keras.layers.Dropout(0.5),
-        tf.keras.layers.Dense(12, activation = "softmax")
+        tf.keras.layers.Dense(NUM_CATEGORIES, activation = "softmax")
     ])
     
     model.compile(
@@ -76,7 +92,17 @@ def get_model():
 def main():
     
     model = get_model()
-    training_set, validation_set, test_set = load_data(sys.argv[1])
+    # Capture os class_names retornados pela função
+    training_set, validation_set, test_set, class_names = load_data(sys.argv[1])
+    
+    # Passe os class_names para a função
+    print("--- Training Set ---")
+    show_classes_info(training_set, class_names)
+    print("\n--- Validation Set ---")
+    show_classes_info(validation_set, class_names)
+    print("\n--- Test Set ---")
+    show_classes_info(test_set, class_names)
+    
     model.fit(
         training_set,
         validation_data=validation_set,
