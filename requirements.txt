@@ -4,3 +4,4 @@ tensorflow-datasets
 matplotlib
 Pillow
 tensorflow_docs
+pandas

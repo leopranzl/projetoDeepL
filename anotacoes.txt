@@ -109,10 +109,10 @@ pois validation accuracy fica em 69
 
     
 5o teste:
-    dataset dividido em treino, validacao e teste. adicionada camada de data augmentation. acuracia melhorou, mas ainda há overfitting.
-    Epoch 10/10
-    339/339 ━━━━━━━━━━━━━━━━━━━━ 27s 80ms/step - accuracy: 0.8980 - loss: 0.3316 - val_accuracy: 0.7141 - val_loss: 1.1699
-    74/74 ━━━━━━━━━━━━━━━━━━━━ 2s 20ms/step - accuracy: 0.7228 - loss: 1.1641
+    dataset dividido em treino, validacao e teste. Todas as imagens das 3 classes de vidro (brown, green e white) foram juntadas em 1 classe só chamada glass.
+    adicionada camada de data augmentation.
+    339/339 ━━━━━━━━━━━━━━━━━━━━ 23s 68ms/step - accuracy: 0.6435 - loss: 1.0970 - val_accuracy: 0.6199 - val_loss: 1.1166
+    74/74 ━━━━━━━━━━━━━━━━━━━━ 2s 21ms/step - accuracy: 0.6362 - loss: 1.1140
     def get_model():
     model = tf.keras.Sequential([
         tf.keras.layers.Rescaling(1./255),
@@ -124,11 +124,11 @@ pois validation accuracy fica em 69
         tf.keras.layers.Conv2D(128, (3, 3), padding='same', activation='relu'),
         tf.keras.layers.MaxPooling2D(pool_size=(2, 2)),
         tf.keras.layers.Flatten(),
-        tf.keras.layers.Dense(512, activation="relu"),
+        tf.keras.layers.Dense(256, activation="relu"),
         tf.keras.layers.Dropout(0.5),
         tf.keras.layers.Dense(256, activation="relu"),
         tf.keras.layers.Dropout(0.5),
-        tf.keras.layers.Dense(12, activation = "softmax")
+        tf.keras.layers.Dense(NUM_CATEGORIES, activation = "softmax")
     ])
     
     model.compile(
@@ -136,4 +136,73 @@ pois validation accuracy fica em 69
         loss='sparse_categorical_crossentropy',
         metrics=["accuracy"]
     )
-    return model
+
+6o teste:
+    como a camada de data augmentation piorou o aprendizado, neste teste reduzi o factor da camada RandAugment de 0.5 para 0.2.
+    Implementado o earlystopping com min_delta de 0.01 e patience de 5. A validation accuracy melhorou, atingindo 75,29% na 10 época, mas caiu para 72,31 ao final da 15 época
+    Epoch 15/50
+    339/339 ━━━━━━━━━━━━━━━━━━━━ 23s 69ms/step - accuracy: 0.9196 - loss: 0.2473 - val_accuracy: 0.7231 - val_loss: 1.1112
+    Epoch 15: early stopping
+    74/74 ━━━━━━━━━━━━━━━━━━━━ 1s 20ms/step - accuracy: 0.7332 - loss: 1.0653
+    callback = tf.keras.callbacks.EarlyStopping(
+        monitor='val_accuracy',
+        min_delta=0.01,
+        patience=5,
+        verbose=1,
+        mode='auto',
+        baseline=None,
+        restore_best_weights=False,
+        start_from_epoch=0
+    )
+    def get_model():
+    model = tf.keras.Sequential([
+        tf.keras.layers.Rescaling(1./255),
+        tf.keras.layers.RandAugment(value_range=(0, 1), num_ops=2, factor=0.2, interpolation="bilinear", seed=123, data_format=None,),
+        tf.keras.layers.Conv2D(32, (3, 3), input_shape=(IMG_WIDTH, IMG_HEIGHT, 3), padding="same", activation='relu'),
+        tf.keras.layers.MaxPooling2D(pool_size=(2, 2)),
+        tf.keras.layers.Conv2D(64, (3, 3), padding='same', activation='relu'),
+        tf.keras.layers.MaxPooling2D(pool_size=(2, 2)),
+        tf.keras.layers.Conv2D(128, (3, 3), padding='same', activation='relu'),
+        tf.keras.layers.MaxPooling2D(pool_size=(2, 2)),
+        tf.keras.layers.Flatten(),
+        tf.keras.layers.Dense(256, activation="relu"),
+        tf.keras.layers.Dropout(0.5),
+        tf.keras.layers.Dense(256, activation="relu"),
+        tf.keras.layers.Dropout(0.5),
+        tf.keras.layers.Dense(NUM_CATEGORIES, activation = "softmax")
+    ])
+
+
+7oteste:
+    implementado kernel regularizer L1L2 com valor default em todas as camadas densas e convolucionais. patience do earlystopping reduzido para de 5 para 3.
+    Acuraia de valdacao atingiu 76,6% na 10a epoca, e terminou em 75,33% na 12a epoca. acuracia no teste ficou em 0.76
+    339/339 ━━━━━━━━━━━━━━━━━━━━ 24s 70ms/step - accuracy: 0.7428 - loss: 0.7615 - val_accuracy: 0.7533 - val_loss: 0.7686
+    Epoch 12: early stopping
+    74/74 ━━━━━━━━━━━━━━━━━━━━ 2s 20ms/step - accuracy: 0.7687 - loss: 0.7446
+    def get_model():
+    model = tf.keras.Sequential([
+        tf.keras.layers.Rescaling(1./255),
+        tf.keras.layers.RandAugment(value_range=(0, 1), num_ops=2, factor=0.2, interpolation="bilinear", seed=123, data_format=None,),
+        tf.keras.layers.Conv2D(32, (3, 3), input_shape=(IMG_WIDTH, IMG_HEIGHT, 3), padding="same", activation='relu', kernel_regularizer=tf.keras.regularizers.L1L2),
+        tf.keras.layers.MaxPooling2D(pool_size=(2, 2)),
+        tf.keras.layers.Conv2D(64, (3, 3), padding='same', activation='relu', kernel_regularizer=tf.keras.regularizers.L1L2),
+        tf.keras.layers.MaxPooling2D(pool_size=(2, 2)),
+        tf.keras.layers.Conv2D(128, (3, 3), padding='same', activation='relu', kernel_regularizer=tf.keras.regularizers.L1L2),
+        tf.keras.layers.MaxPooling2D(pool_size=(2, 2)),
+        tf.keras.layers.Flatten(),
+        tf.keras.layers.Dense(256, activation="relu", kernel_regularizer=tf.keras.regularizers.L1L2),
+        tf.keras.layers.Dropout(0.5),
+        tf.keras.layers.Dense(256, activation="relu", kernel_regularizer=tf.keras.regularizers.L1L2),
+        tf.keras.layers.Dropout(0.5),
+        tf.keras.layers.Dense(NUM_CATEGORIES, activation = "softmax")
+    ])
+    callback = tf.keras.callbacks.EarlyStopping(
+        monitor='val_accuracy',
+        min_delta=0.01,
+        patience=3,
+        verbose=1,
+        mode='auto',
+        baseline=None,
+        restore_best_weights=False,
+        start_from_epoch=0
+    )

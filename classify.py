@@ -8,9 +8,9 @@ import pandas as pd
 NUM_CATEGORIES = 10
 IMG_WIDTH = 224
 IMG_HEIGHT = 224
-EPOCHS = 10
+EPOCHS = 50
 BATCH_SIZE = 32
- 
+
 def load_data(data_dir):
     train_dir = os.path.join(data_dir, "train")
     val_dir = os.path.join(data_dir, "val")
@@ -66,18 +66,20 @@ def show_classes_info(dataset, class_names):
     print(label_counts.sort_index())
 
 def get_model():
+    my_regularizer = tf.keras.regularizers.L2(0.001)
     model = tf.keras.Sequential([
         tf.keras.layers.Rescaling(1./255),
-        tf.keras.layers.Conv2D(32, (3, 3), input_shape=(IMG_WIDTH, IMG_HEIGHT, 3), padding="same", activation='relu'),
+        tf.keras.layers.RandAugment(value_range=(0, 1), num_ops=2, factor=0.2, interpolation="bilinear", seed=123, data_format=None,),
+        tf.keras.layers.Conv2D(32, (3, 3), input_shape=(IMG_WIDTH, IMG_HEIGHT, 3), padding="same", activation='relu', kernel_regularizer=my_regularizer),
         tf.keras.layers.MaxPooling2D(pool_size=(2, 2)),
-        tf.keras.layers.Conv2D(64, (3, 3), padding='same', activation='relu'),
+        tf.keras.layers.Conv2D(64, (3, 3), padding='same', activation='relu', kernel_regularizer=my_regularizer),
         tf.keras.layers.MaxPooling2D(pool_size=(2, 2)),
-        tf.keras.layers.Conv2D(128, (3, 3), padding='same', activation='relu'),
+        tf.keras.layers.Conv2D(128, (3, 3), padding='same', activation='relu', kernel_regularizer=my_regularizer),
         tf.keras.layers.MaxPooling2D(pool_size=(2, 2)),
         tf.keras.layers.Flatten(),
-        tf.keras.layers.Dense(256, activation="relu"),
+        tf.keras.layers.Dense(256, activation="relu", kernel_regularizer=my_regularizer),
         tf.keras.layers.Dropout(0.5),
-        tf.keras.layers.Dense(256, activation="relu"),
+        tf.keras.layers.Dense(256, activation="relu", kernel_regularizer=my_regularizer),
         tf.keras.layers.Dropout(0.5),
         tf.keras.layers.Dense(NUM_CATEGORIES, activation = "softmax")
     ])
@@ -103,10 +105,22 @@ def main():
     print("\n--- Test Set ---")
     show_classes_info(test_set, class_names)
     
+    callback = tf.keras.callbacks.EarlyStopping(
+        monitor='val_accuracy',
+        min_delta=0.01,
+        patience=3,
+        verbose=1,
+        mode='auto',
+        baseline=None,
+        restore_best_weights=False,
+        start_from_epoch=0
+    )
+    
     model.fit(
         training_set,
         validation_data=validation_set,
-        epochs=EPOCHS
+        epochs=EPOCHS,
+        callbacks=[callback]
     )
     model.evaluate(test_set)
     
