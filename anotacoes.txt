@@ -618,3 +618,81 @@ model = tf.keras.Sequential([
     min_lr=1e-6,
     verbose=1
 )
+
+16o teste:
+Batch size aumentado de 32 para 64. 
+Resultado: melhor desempenho até agora
+
+Epoch 20/50
+170/170 ━━━━━━━━━━━━━━━━━━━━ 20s 118ms/step - accuracy: 0.8326 - loss: 0.5029 - val_accuracy: 0.8066 - val_loss: 0.5936 - learning_rate: 2.5000e-04
+Epoch 21/50
+170/170 ━━━━━━━━━━━━━━━━━━━━ 20s 118ms/step - accuracy: 0.8302 - loss: 0.4854 - val_accuracy: 0.8095 - val_loss: 0.5874 - learning_rate: 2.5000e-04
+Epoch 21: early stopping
+37/37 ━━━━━━━━━━━━━━━━━━━━ 2s 42ms/step - accuracy: 0.8202 - loss: 0.5793
+
+
+NUM_CATEGORIES = 10
+IMG_WIDTH = 224
+IMG_HEIGHT = 224
+EPOCHS = 50
+BATCH_SIZE = 64
+SEED = 123
+
+model = tf.keras.Sequential([
+        tf.keras.layers.Rescaling(1./255),
+        tf.keras.layers.RandomFlip("horizontal"),
+        tf.keras.layers.RandomRotation(0.15),
+        tf.keras.layers.RandomZoom(0.15),
+        tf.keras.layers.RandomContrast(0.1),
+        
+        #1o bloco
+        tf.keras.layers.Conv2D(32, (3, 3), input_shape=(IMG_WIDTH, IMG_HEIGHT, 3), padding="same", activation='relu'),
+        tf.keras.layers.MaxPooling2D(pool_size=(2, 2)),
+        
+        #2o bloco
+        tf.keras.layers.Conv2D(64, (3, 3), padding='same', activation='relu'),
+        tf.keras.layers.MaxPooling2D(pool_size=(2, 2)),
+        
+        #3o bloco
+        tf.keras.layers.Conv2D(128, (3, 3), padding='same', activation='relu'),
+        tf.keras.layers.MaxPooling2D(pool_size=(2, 2)),
+        
+        #4o bloco
+        tf.keras.layers.Conv2D(256, (3, 3), padding='same', activation='relu'),
+        tf.keras.layers.MaxPooling2D(pool_size=(2, 2)),
+        
+        tf.keras.layers.Flatten(),
+        tf.keras.layers.Dense(512, activation="relu"),
+        tf.keras.layers.Dropout(0.5),
+        tf.keras.layers.Dense(256, activation="relu"),
+        tf.keras.layers.Dense(NUM_CATEGORIES, activation = "softmax")
+    ])
+    
+    model.compile(
+        optimizer='adam',
+        loss='sparse_categorical_crossentropy',
+        metrics=["accuracy"]
+    )
+    return model
+    
+    callback = tf.keras.callbacks.EarlyStopping(
+        monitor='val_accuracy',
+        min_delta=0.01,
+        patience=5,
+        verbose=1,
+        mode='auto',
+        baseline=None,
+        restore_best_weights=False,
+        start_from_epoch=0
+    )
+    
+    reduce_lr = tf.keras.callbacks.ReduceLROnPlateau(
+    monitor='val_accuracy',
+    factor=0.5,     # Reduz para metade
+    patience=2,     # Espera 2 épocas sem melhorar
+    min_lr=1e-6,
+    verbose=1
+)
+
+17o teste:
+Reduzido tamanho das imagens de 224x224 para 96x96. O resto do modelo se mantem o mesmo

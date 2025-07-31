@@ -9,7 +9,7 @@ NUM_CATEGORIES = 10
 IMG_WIDTH = 224
 IMG_HEIGHT = 224
 EPOCHS = 50
-BATCH_SIZE = 32
+BATCH_SIZE = 64
 SEED = 123
 
 def load_data(data_dir):
@@ -74,22 +74,20 @@ def get_model():
         tf.keras.layers.RandomZoom(0.15),
         tf.keras.layers.RandomContrast(0.1),
         
-        
-        
         #1o bloco
-        tf.keras.layers.Conv2D(32, (3, 3), input_shape=(IMG_WIDTH, IMG_HEIGHT, 3), padding="same", activation='relu'),
+        tf.keras.layers.Conv2D(32, (7, 7), input_shape=(IMG_WIDTH, IMG_HEIGHT, 3), padding="same", activation='relu'),
         tf.keras.layers.MaxPooling2D(pool_size=(2, 2)),
         
         #2o bloco
-        tf.keras.layers.Conv2D(64, (3, 3), padding='same', activation='relu'),
+        tf.keras.layers.Conv2D(64, (7, 7), padding='same', activation='relu'),
         tf.keras.layers.MaxPooling2D(pool_size=(2, 2)),
         
         #3o bloco
-        tf.keras.layers.Conv2D(128, (3, 3), padding='same', activation='relu'),
+        tf.keras.layers.Conv2D(128, (7, 7), padding='same', activation='relu'),
         tf.keras.layers.MaxPooling2D(pool_size=(2, 2)),
         
         #4o bloco
-        tf.keras.layers.Conv2D(256, (3, 3), padding='same', activation='relu'),
+        tf.keras.layers.Conv2D(256, (7, 7), padding='same', activation='relu'),
         tf.keras.layers.MaxPooling2D(pool_size=(2, 2)),
         
         tf.keras.layers.Flatten(),
