@@ -63,7 +63,6 @@ def show_classes_info(dataset, class_names):
     print(label_counts.sort_index())
 
 def get_model():
-    # Use apenas a regularização L2 com um valor pequeno
     # Possivel motivo para  abatch normalization estar atrapalhando o treinamento: dados desbalanceados (classes com muitas e poucas imagens)
     my_regularizer = tf.keras.regularizers.l2(0.001)
     
@@ -151,3 +150,4 @@ def main():
     
 if __name__ == "__main__":
     main()
+
